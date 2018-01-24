@@ -12,6 +12,8 @@ class SoapClientCurl extends \SoapClient
 	{
 		//Setup default curlOptions
 		$socket_timeout = ini_get('default_socket_timeout');
+		if( empty( $socket_timeout ) )
+			$socket_timeout = 60;
 		$connection_timeout = $socket_timeout;
 		if( !empty( $options['connection_timeout'] ) )
 			$connection_timeout = $options['connection_timeout'];
