@@ -1,6 +1,7 @@
 <?php
 /**
  * A wrapper around \SoapClient that uses cURL to make the requests
+ * Version: 1.1.0
  */
 class SoapClientCurl extends \SoapClient
 {
@@ -22,7 +23,7 @@ class SoapClientCurl extends \SoapClient
 			CURLOPT_FOLLOWLOCATION => true,
 			CURLOPT_SSL_VERIFYHOST => 0,
 			CURLOPT_SSL_VERIFYPEER => false,
-			CURL_TIMEOUT => $socket_timeout,
+			CURLOPT_TIMEOUT => $socket_timeout,
 			CURLOPT_CONNECTTIMEOUT => $connection_timeout
 		);
 
@@ -97,10 +98,13 @@ class SoapClientCurl extends \SoapClient
 
 		$output = '';
 
-		if( $one_way ) 
-			url_exec($this->ch);
-		else
-			$output = curl_exec($this->ch);
+		$response = curl_exec($this->ch);
+		if( false === $response )
+		    var_dump( curl_error($this->ch) );
+
+		if( !$one_way ) 
+		    $output = $response;
+
 		curl_reset($this->ch);
 
 		return $output;
