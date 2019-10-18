@@ -1,7 +1,7 @@
 <?php
 /**
  * A wrapper around \SoapClient that uses cURL to make the requests
- * Version: 1.1.0
+ * Version: 1.2.0
  */
 class SoapClientCurl extends \SoapClient
 {
@@ -23,8 +23,9 @@ class SoapClientCurl extends \SoapClient
 			CURLOPT_FOLLOWLOCATION => true,
 			CURLOPT_SSL_VERIFYHOST => 0,
 			CURLOPT_SSL_VERIFYPEER => false,
-			CURLOPT_TIMEOUT => $socket_timeout,
-			CURLOPT_CONNECTTIMEOUT => $connection_timeout
+			CURLOPT_TIMEOUT => (int) $socket_timeout,
+			CURLOPT_CONNECTTIMEOUT => (int) $connection_timeout,
+			CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
 		);
 
 		$this->headers = $headers;
@@ -43,7 +44,11 @@ class SoapClientCurl extends \SoapClient
 			curl_setopt($this->ch, CURLOPT_FILE, $fp);
 
 			curl_exec($this->ch);
-			curl_reset($this->ch);
+
+			if( function_exists( 'curl_reset' ) )
+				curl_reset($this->ch);
+			else
+				$this->ch = curl_init();
 		}
 		fclose($fp);
 		
@@ -76,16 +81,25 @@ class SoapClientCurl extends \SoapClient
 		$this->__last_request = $request;
 
 		if(empty($this->headers)) {
-			$headers = array( 'Connection: Close', 'Content-Type: application/soap+xml' );
+			$headers = array( 'Connection: Close' );
 		}
 		else {
 			$headers = $this->headers;
 		}
 
 		$soapHeaders = array(
-			sprintf('SOAPAction: "%s"', $action),
 			sprintf('Content-Length: %d', strlen($request))
 		);
+
+		switch( $version ) {
+			case SOAP_1_1:
+				$soapHeaders[] = 'Content-Type: text/xml; charset="utf-8"';
+				$soapHeaders[] = sprintf('SOAPAction: "%s"', $action);
+				break;
+			case SOAP_1_2:
+				$soapHeaders[] = sprintf('Content-Type: application/soap+xml; charset="utf-8"; action="%s"', $action);
+				break;
+		}
 
 		$headers = array_merge($headers, $soapHeaders);
 
@@ -98,14 +112,17 @@ class SoapClientCurl extends \SoapClient
 
 		$output = '';
 
-		$response = curl_exec($this->ch);
-		if( false === $response )
-		    var_dump( curl_error($this->ch) );
-
+        $response = curl_exec($this->ch);
+        if( false === $response )
+			error_log( curl_error($this->ch) );
+        
 		if( !$one_way ) 
-		    $output = $response;
+            $output = $response;
 
-		curl_reset($this->ch);
+		if( function_exists( 'curl_reset' ) )
+			curl_reset($this->ch);
+		else
+			$this->ch = curl_init();
 
 		return $output;
 	}
