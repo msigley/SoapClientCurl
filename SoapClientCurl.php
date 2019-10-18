@@ -111,13 +111,13 @@ class SoapClientCurl extends \SoapClient
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, true);
 
 		$output = '';
-
-        $response = curl_exec($this->ch);
-        if( false === $response )
+		
+		$response = curl_exec($this->ch);
+		if( false === $response )
 			error_log( curl_error($this->ch) );
         
 		if( !$one_way ) 
-            $output = $response;
+			$output = $response;
 
 		if( function_exists( 'curl_reset' ) )
 			curl_reset($this->ch);
